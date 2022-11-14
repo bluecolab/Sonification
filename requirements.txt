@@ -1,0 +1,7 @@
+# requirements.txt
+numpy
+pandas
+  # sonification requirements
+pygame
+pretty_midi
+midiutil
