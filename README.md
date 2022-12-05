@@ -14,4 +14,6 @@ output data as sound
 
 - `python tests.py`
 
+output files can be found in midi folder
+
 ## Modify
