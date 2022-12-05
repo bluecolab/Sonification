@@ -1,9 +1,9 @@
 import pandas as pd
 import urllib.request
-from sonify import sonify
+import sonify
 import numpy as np
-from .influxModels import getStationDelta
-from .apiCalls import getSensors
+import influxModels
+import apiCalls
 import pandas as pd
 
 # define the columns to pull for different types of data
@@ -26,7 +26,7 @@ def SaveFile(station:str = 'Ada'):
     data = None
 
     try:
-        data = getStationDelta(station, 2)
+        data = influxModels.getStationDelta(station, 2)
         data.replace(0.,np.nan, inplace=True)
 
         # set local params
@@ -40,7 +40,7 @@ def SaveFile(station:str = 'Ada'):
             sounds = WATER_SOUNDS
 
         # pull sensors
-        sensors = getSensors()
+        sensors = apiCalls.getSensors()
 
         input_data = []
         for i, col in enumerate(cols):
@@ -51,7 +51,7 @@ def SaveFile(station:str = 'Ada'):
             input_data.append([sounds[i]] + list(zip(range(0, len(col_data)), col_data)))
         
         # play!
-        sonify.play_midi_from_data(input_data, track_type='multiple', key = 'd_sharp_major', file_name='dashboard/static/data/' + station.lower() + '.mid')
+        sonify.play_midi_from_data(input_data, track_type='multiple', key = 'd_sharp_major', file_name='midi/' + station.lower() + '.mid')
         return(True)
     except (urllib.error.URLError, KeyError) as e:
         return "We're sorry, can't load new data right now. Please enjoy this sonification of some of our previous data."

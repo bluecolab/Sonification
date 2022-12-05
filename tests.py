@@ -1,1 +1,4 @@
-sonify.SaveFile('Odin')
+import sonification
+
+sonification.SaveFile('Odin')
+sonification.SaveFile('Ada')
