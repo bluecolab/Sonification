@@ -1,3 +1,5 @@
 app currently sonifies 2 days worth of sensor data pulled live from the api
 
 modify to accept a local json file (this is the format it's currently parsing from the api: http://api.bluecolab.cc/influx/sensordata/Odin/delta?stream=true&days=2)
+modify apiCalls.py
+modify sonification.py

@@ -20,12 +20,13 @@ WEATHER_SOUNDS = ['orchestral harp','choir aahs','church organ','violin','cello'
 WATER_SOUNDS = ['orchestral harp','choir aahs','church organ','viola','violin','cello']
 
 
-def SaveFile(station:str = 'Ada'):
+def SaveFile(station):
     
     #reading the data
     data = None
 
     try:
+        #modify the line below
         data = influxModels.getStationDelta(station, 2)
         data.replace(0.,np.nan, inplace=True)
 
