@@ -1,0 +1,6 @@
+Midi 1 - An example of Lower Temperatures are mapped to lower notes at Seconds at 60 BPM
+Midi 2 - An example of Lower Temperatures are mapped to lower notes at 105.6 Seconds at 60 BPM
+Midi 3 - An example of Hotter Temperatures are mapped to lower notes at Seconds at 60 BPM
+Midi 4 - An example of Hotter Temperatures are mapped to lower notes at 105.6 Seconds at 60 BPM
+
+Each Figure_* goes with its respective Midi file.
