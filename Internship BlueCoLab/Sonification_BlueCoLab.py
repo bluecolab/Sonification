@@ -4,7 +4,7 @@ import itertools as it
 import pandas as pd  # https://pypi.org/project/pandas/
 import matplotlib.pylab as plt  # https://pypi.org/project/matplotlib/
 from midiutil import MIDIFile  # https://midiutil.readthedocs.io/en/1.2.1/
-import sys
+import math
 
 
 def str2midi(note_string):
@@ -28,58 +28,164 @@ def str2midi(note_string):
             )
 
 
-filename = input("""Please enter your .CSV file's name. If your using this for BlueCoLab's water stations
+def midi2str(midi_number, sharp=True):
+    """
+  Given a MIDI pitch number, returns its note string name (e.g. "C3").
+  """
+    MIDI_A4 = 69
+
+    if math.isinf(midi_number) or math.isnan(midi_number):
+        return "?"
+    num = midi_number - (MIDI_A4 - 4 * 12 - 9)
+    note = (num + .5) % 12 - .5
+    rnote = int(round(note))
+    error = note - rnote
+    octave = str(int(round((num - note) / 12.)))
+    if sharp:
+        names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+    else:
+        names = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
+    names = names[rnote] + octave
+    if abs(error) < 1e-4:
+        return names
+    else:
+        err_sig = "+" if error > 0 else "-"
+        err_str = err_sig + str(round(100 * abs(error), 2)) + "%"
+        return names + err_str
+
+
+def map_value(value, min_value, max_value, min_result, max_result):
+    """maps value (or array of values) from one range to another"""
+    result = min_result + (value - min_value) / (max_value - min_value) * (max_result - min_result)
+    return result
+
+
+def get_scale_notes(start_note, octaves, scale):
+    """gets scale note names
+
+    start_note: string , ex. 'C2'
+    octaves: int, number of octaves
+    scale: string (from available) or custom list of scale steps (ex. [2,2,1,2,2,2,1])
+
+    returns: list of note names (including root as the highest note)
+    """
+
+    scales = {
+        'chromatic': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+
+        'major': [2, 2, 1, 2, 2, 2, 1],
+        'minor': [2, 1, 2, 2, 1, 2, 2],
+        'harmonicMinor': [2, 1, 2, 2, 1, 3, 1],
+        'melodicMinor': [2, 1, 2, 2, 2, 2, 1],
+
+        'ionian': [2, 2, 1, 2, 2, 2, 1],
+        'dorian': [2, 1, 2, 2, 2, 1, 2],
+        'phrygian': [1, 2, 2, 2, 1, 2, 2],
+        'lydian': [2, 2, 2, 1, 2, 2, 1],
+        'mixolydian': [2, 2, 1, 2, 2, 1, 2],
+        'aeolian': [2, 1, 2, 2, 1, 2, 2],
+        'lochrian': [1, 2, 2, 1, 2, 2, 2],
+
+        'majorPent': [2, 2, 3, 2, 3],
+        'minorPent': [3, 2, 2, 3, 2],
+
+        'wholetone': [2, 2, 2, 2, 2, 2],
+        'diminished': [2, 1, 2, 1, 2, 1, 2, 1],
+
+        # add more here!
+    }
+
+    # get scale steps
+    if type(scale) is str:
+        if scale not in scales.keys():
+            raise ValueError(f'Scale name not recognized!')
+        else:
+            scale_steps = scales[scale]
+    if type(scale) is list:
+        scale_steps = scale
+
+    # get note names for each scale step, in each octave
+    note_names1 = []
+    for octave in range(octaves):
+        note_number = str2midi(start_note) + (12 * octave)
+
+        for step in scale_steps:
+            note_names1.append(midi2str(note_number))
+            note_number = note_number + step
+
+    # add root as last note
+    last_midi_note = str2midi(start_note) + (octaves * 12)
+    note_names1.append(midi2str(last_midi_note))
+
+    # could alter function to return midi note numbers instead
+    # note_numbers = [str2midi(n) for n in note_names]
+
+    return note_names1
+
+
+while True:
+    filename = input("""Please enter your .CSV file's name. If your using this for BlueCoLab's water stations
 please enter the number 1 for ADA Range.csv or the number 2 for ALAN Range.csv. 
 Otherwise feel free to enter your own file name WARNING: This is case sensitive.
 Enter the file name here: """)
 
-if filename == "1":
-    filename = "ADA Range.csv"
-elif filename == "2":
-    filename = "ALAN Range.csv"
-elif filename == "":
-    print("Please restart and enter a file name that is not blank.")
-    quit()
-else:
-    filename = filename
+    if filename == "1":
+        filename = "ADA Range.csv"
+        break
+    elif filename == "2":
+        filename = "ALAN Range.csv"
+        break
+    elif filename == "":
+        print()
+        print("Please restart and enter a file name that is not blank.")
+        print()
+    else:
+        filename = filename
+        break
 
 print()
-duration_beats = input("""Please enter the duration in beats you'd like your MIDI files to be.
+
+while True:
+    duration_beats = input("""Please enter the duration in beats you'd like your MIDI files to be.
 Enter the number 1 if you'd like it to be 52.8 beats or the number 2 for 105.6 beats.
-By default beats are set to 52.8 if you leave this: """)
-print()
+By default beats are set to 52.8 if you leave this blank: """)
 
-if duration_beats != "" and duration_beats not in ["1", "2"]:
-    print("Please restart and enter a valid option")
-    quit()
-elif duration_beats == "1":
-    duration_beats = 52.8
-elif duration_beats == "2":
-    duration_beats = 105.6
-elif duration_beats == "":
-    duration_beats = 52.8
+    if duration_beats != "" and duration_beats not in ["1", "2"]:
+        print()
+        print("Please restart and enter a valid option")
+        print()
+    elif duration_beats == "1":
+        duration_beats = 52.8
+        break
+    elif duration_beats == "2":
+        duration_beats = 105.6
+        break
+    elif duration_beats == "":
+        duration_beats = 52.8
+        break
+
 
 bpm = 60  # Tempo (beats per minute)
 
-y_scale = 0.5  # Scaling parameter for y-axis data (1 = linear)
+y_scale = 0.75  # Scaling parameter for y-axis data (1 = linear)
 
 # Note set for mapping (or use a few octaves of a specific scale)
+
+"""
+Previous note names:
 
 note_names = ['C1', 'C2', 'G2',
               'C3', 'E3', 'G3', 'A3', 'B3',
               'D4', 'E4', 'G4', 'A4', 'B4',
               'D5', 'E5', 'G5', 'A5', 'B5',
               'D6', 'E6', 'F#6', 'G6', 'A6']
+"""
+
+note_names = get_scale_notes('C3', 3, 'lydian')
 
 vel_min, vel_max = 35, 127  # Minimum and maximum note velocity
 
-
-def map_value(value, min_value, max_value, min_result, max_result):
-    # Maps value (or array of values) from one range to another
-    result = min_result + (value - min_value) / (max_value - min_value) * (max_result - min_result)
-    return result
-
-
+# Start script here
 search_dir = os.path.dirname(os.path.realpath(__file__)) + "\\Live Files (Used in Script)"
 file_path = None
 
@@ -87,6 +193,7 @@ file_path = None
 for root, dirs, files in os.walk(search_dir):
     if filename in files:
         file_path = os.path.join(root, filename)
+        print()
         print(f"Found file: {file_path}")
         break
 
@@ -125,8 +232,8 @@ for column_name in column_list:
 time = column_dict['timestamp']
 
 # Compress time
-time_data = map_value(time, min(time), max(time), duration_beats,
-                      0)  # Compress time from seconds to beats, the largest age the lowest temperature mapped to beat 0
+time_data = map_value(time, min(time), max(time), 0.,
+                      duration_beats)  # Compress time from seconds to beats, the largest age the lowest temperature mapped to beat 0
 
 if 'measurement' in column_dict:
     del column_dict['measurement']  # Remove measurement column if it exists
@@ -160,6 +267,7 @@ for key, values in y_data.items():
 note_midis = [str2midi(n) for n in note_names]
 n_notes = len(note_midis)
 print('Resolution: ', n_notes, 'notes')
+print()
 
 # Create a dictionary to store the MIDI notes for each key
 midi_data = {}
@@ -199,11 +307,11 @@ for key in y_data_lists:
     # Make sure everything in y_data_lists is a float data type.
     y_float = pd.array(y_data_lists[key], dtype=float)
     # print(y_float)
-    plt.scatter(time_data, midi_data_lists[key], s=50 * y_float)
+    plt.scatter(time_data, midi_data_lists[key], c=50 * y_float)
     plt.xlabel('time [beats]')
     plt.ylabel('midi notes number')
     plt.title(f'{key}')
-    # plt.show()
+    plt.show()
 
 for key in midi_data_lists:
     # Make MIDI file.
@@ -222,6 +330,30 @@ for key in midi_data_lists:
 
     # Check if the file path exists.
     if os.path.exists(save_directory):
+        i = 0
+        while True:
+            i += 1
+
+            if i == 1:
+                break
+            save_userinput = input("""If you'd like to change the default save location of the MIDI files press 1. Otherwise
+leave this blank or enter 2 to continue with your preset save location: """)
+            print()
+            if save_userinput == "1":
+                print()
+                user_input = input("Please enter the directory you'd like to save the MIDI files: ")
+                print()
+                with open(save_directory, "w") as f:
+                    f.write("")
+                    f.write(user_input)
+                    break
+            elif save_userinput == "2":
+                break
+            elif save_userinput == "":
+                break
+            else:
+                print("Please enter a valid option (1-2).")
+
         # Read the user input from the file.
         with open(save_directory, "r") as f:
             user_input = f.readline()
