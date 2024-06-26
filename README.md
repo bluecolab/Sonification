@@ -2,6 +2,8 @@
 
 output data as sound
 
+Pull water quality data from API to play as sound
+
 ## Setup
 
 - `python -m venv venv`
